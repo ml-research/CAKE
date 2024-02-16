@@ -61,7 +61,7 @@ Tested with Python 3.10.13.
 
 # Cite
 ``` bibtex
-@misc{braun2024deep,
+@inproceedings{braun2024deep,
       title={Deep Classifier Mimicry without Data Access}, 
       author={Steven Braun and Martin Mundt and Kristian Kersting},
       year={2024},
