@@ -1,0 +1,6 @@
+# @package _global_
+defaults:
+  - override /dataset: cifar-10
+
+data:
+  dataset: cifar-100

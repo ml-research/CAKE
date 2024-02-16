@@ -1,0 +1,16 @@
+# @package _global_
+
+defaults:
+  - override /experiment: cifar-10-resnet18
+  - override /dataset: cifar-100
+
+teacher:
+  model:
+    arch: "resnet"
+    resnet:
+      depth:
+        18
+    pretrained: false
+
+env:
+  wandb: true

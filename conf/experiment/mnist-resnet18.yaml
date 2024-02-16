@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist.yaml
+
+teacher:
+  model:
+    arch: "resnet"
+    resnet:
+      depth:
+        18
+    pretrained: false
+
+env:
+  wandb: true

@@ -1,0 +1,181 @@
+defaults:
+  - _self_
+  - dataset: null
+  - experiment: null  # Needs to be last as this overwrites other defaults
+  - output:
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+
+# Hydra config
+hydra:
+  run:
+    dir: "${env.results_dir}/${data.dataset}/${oc.select:env.tag,${now:%Y-%m-%d_%H-%M-%S}}"
+  sweep:
+    dir: "${hydra.run.dir}/${hydra.job.name}"
+    subdir: "${hydra.run.dir}/${hydra.job.num}"
+  job_logging:
+    handlers:
+      file:
+        filename: ${hydra.runtime.output_dir}/${hydra.job.name}.log  # Fixed in hydra-colorlog version 1.2.1
+
+
+# Model configuration, chooses the specific model architecture (mlp, cnn, resnet, svm, ...) and the model hyper-parameters
+# This config will be present in teacher.model and student.model to control the model of each independently
+# Changing something in the teacher without specifying the student will also apply the config
+# to the student (teacher.model.arch=resnet -> student.model.arch will also be resnet)
+
+teacher:
+  eval: true
+  model:
+    arch: "mlp"
+    pretrained: false
+    in_channels: 3
+    resnet:
+      depth: 50  # 18/34/50/101/152
+    mlp:
+      num_hidden: 2
+      hidden_size: 20
+    cnn:
+    cnn_adaptive_pool:
+      last_layer_dim: 64
+    vit:
+      patch_size: 4
+      dim: 32
+      depth: 3
+      heads: 4
+      mlp_dim: 32
+      dropout: 0.0
+      emb_dropout: 0.0
+    svm:
+      kernel: "linear"  # Can be one of "linear", "poly", "rbf"
+      C: 1.0
+      poly:
+        degree: 3
+      rbf:
+        gamma: 1.0
+        num_fourier_features: 100
+  epochs: 30
+  bs: 256
+  lr: 0.5
+  weight_decay: 0.0005
+
+  # Optimizer config
+  optim:
+    type: "sgd"  # Note: sgd works better with 1cycle scheduler
+    scheduler:
+      type: "1cycle"
+      multistep:
+        milestones: [0.66, 0.8]
+      onecycle:
+        div_factor: 25
+        final_div_factor: 1e4
+
+student:
+  model:
+    arch: ${teacher.model.arch}
+    pretrained: ${teacher.model.pretrained}
+    in_channels: ${teacher.model.in_channels}
+    resnet:
+      depth: ${teacher.model.resnet.depth}
+    mlp:
+      num_hidden: ${teacher.model.mlp.num_hidden}
+      hidden_size: ${teacher.model.mlp.hidden_size}
+    cnn:
+    cnn_adaptive_pool:
+      last_layer_dim: ${teacher.model.cnn_adaptive_pool.last_layer_dim}
+    vit:
+      patch_size: ${teacher.model.vit.patch_size}
+      dim: ${teacher.model.vit.dim}
+      depth: ${teacher.model.vit.depth}
+      heads: ${teacher.model.vit.heads}
+      mlp_dim: ${teacher.model.vit.mlp_dim}
+      dropout: ${teacher.model.vit.dropout}
+      emb_dropout: ${teacher.model.vit.emb_dropout}
+    svm:
+      kernel: ${teacher.model.svm.kernel}
+      C: ${teacher.model.svm.C}
+      poly:
+        degree: ${teacher.model.svm.poly.degree}
+      rbf:
+        gamma: ${teacher.model.svm.rbf.gamma}
+        num_fourier_features: ${teacher.model.svm.rbf.num_fourier_features}
+  epochs: ${teacher.epochs}
+  bs: ${teacher.bs}
+  lr: ${teacher.lr}
+  weight_decay: ${teacher.weight_decay}
+
+  # Optimizer config
+  optim:
+    type: ${teacher.optim.type}
+    scheduler:
+      type: ${teacher.optim.scheduler.type}
+      multistep:
+        milestones: ${teacher.optim.scheduler.multistep.milestones}
+      onecycle:
+        div_factor: ${teacher.optim.scheduler.onecycle.div_factor}
+        final_div_factor: ${teacher.optim.scheduler.onecycle.final_div_factor}
+
+  data:  # Filter samples by epsilon values
+    eps_min: 0.0
+    eps_max: 1e10
+
+run:
+  # Manually disable a certain part of the whole experiment (teacher -> sampling -> student)
+  # to be able to e.g. perform only experiments on the teacher or teacher + sampling
+  teacher: True
+  sampling: True
+  student: True
+
+reference_dir:
+  # If any of the reference_dir.xyz are given, don't train/sample again but use the given model/sampels form the reference
+  teacher: ""
+  sampling: ""
+  student: ""
+
+
+
+sampling:
+  weight:  # Loss weights
+    contr: 1e1
+    cls: 1e3
+    tv: 1e5
+    entropy: 0.0
+  noise: 1e-1
+  langevin: false  # Use langevin dynamics
+  smooth_labels: true  # Use smooth labels (teacher model predictions)
+  noise_decay: true  # Decay noise over different sets
+  noise_decay_schedule: "linear"  # [linear, cosine]
+  noise_decay_magnitude: 4  # Magnitude of noise decay. Noise range will then start at $noise and ends at $noise / $10**noise_decay_magnitude
+  num_steps: 500  # Number of update steps for each set
+  batch_size: 100  # Number of samples for each set
+  num_batches: 256  # Number of sets to generate
+  num_groups: 10  # Number of contrastive groups in the sample sets
+  contr_method: "mse"  # Can be one of ["mse", "snn"]
+  snn_temperature: 1.0  # Soft nearest neighbor loss temperature
+
+  optim:
+    type: "sgd"  # Can be one of ["sgd", "adam"]
+
+
+# Data specific config
+data:
+  num_workers: 16
+  dataset: ???
+  eval_test: true
+  full_train_set: false  # If true, train won't be split into train/val (i.e., the full train set is used for training)
+
+# Global environment config
+env:
+  project_name: "CAKE"
+  gpu: 0
+  profiler: ???
+  data_dir: "${oc.env:DATA_DIR}/"
+  results_dir: "${oc.env:RESULTS_DIR}/${env.project_name}"
+  seed: ???
+  tag: ???
+  group_tag: ???
+  wandb: false
+  notes: ???
+  precision: "bf16-mixed"
+  debug: false
+  log_every_n_steps: 50

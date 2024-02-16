@@ -1,0 +1,24 @@
+# @package _global_
+
+teacher:
+  model:
+    arch: mlp
+    in_channels: 1
+
+data:
+  dataset: ???
+
+sampling:
+  num_groups: 2
+  num_batches: 100
+  batch_size: 100
+  num_steps: 250
+  noise: 1e-2
+  weight:
+    tv: 0.0
+    kl: 0.0
+    cls: 1e-2
+    contr: 1e-3
+
+env:
+  log_every_n_steps: 5

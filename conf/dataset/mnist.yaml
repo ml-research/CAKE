@@ -1,0 +1,28 @@
+# @package _global_
+
+data:
+  dataset: mnist-32
+
+
+
+# Good defaults that worked well with resnet18/cifar10
+sampling:
+  num_groups: 10
+  weight:
+    contr: 1e-3
+    cls: 1e3
+    tv: 1e7
+  noise: 1e-1
+  noise_decay_magnitude: 4
+  num_steps: 256
+  batch_size: 500
+  num_batches: 512
+
+
+teacher:
+  model:
+    in_channels: 1
+
+student:
+  model:
+    in_channels: 1

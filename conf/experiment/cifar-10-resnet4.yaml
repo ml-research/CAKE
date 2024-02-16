@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cifar-10.yaml
+
+teacher:
+  model:
+    arch: "resnet"
+    resnet:
+      depth:
+        4
+    pretrained: false
+
+env:
+  wandb: true

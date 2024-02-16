@@ -1,0 +1,27 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist.yaml
+
+data:
+  dataset: mnist
+
+teacher:
+  model:
+    in_channels: 1
+    arch: "cnn"
+    pretrained: false
+  lr: 0.1
+  epochs: 10
+
+student:
+  model:
+    in_channels: 1
+    arch: "cnn"
+    pretrained: false
+  lr: 0.1
+  bs: 128
+
+
+env:
+  wandb: true
